@@ -1,0 +1,6 @@
+*.o
+build
+*.vim
+*.sw[nop]
+.sconsign.dblite
+*.txt
