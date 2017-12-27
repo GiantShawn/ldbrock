@@ -1,0 +1,19 @@
+#!/usr/bin/env python2
+# Construction file for ldbrock
+#
+#Import('lvldbpath')
+
+main_file = 'ldbrock.cc'
+
+env = Environment()
+env['CXX'] = 'clang++'
+env.Append(CPPFLAGS=['-g', '-Wall', '-std=c++1z'])
+env.Append(CPPPATH=['#/3rd-party', '#/leveldb/include'])
+env.Append(LIBPATH=['/usr/local/lib/', '/usr/lib/', '#/build/3rd-party/linenoise', '#/leveldb/out-static'])
+env.Append(LIBS=['linenoise', 'leveldb', 'pthread'])
+
+sources = [main_file]
+
+ldbrock = env.Program('ldbrock', sources)
+
+Return('ldbrock')
