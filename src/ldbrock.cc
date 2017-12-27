@@ -132,14 +132,14 @@ SplitArgs::SplitArgs(const string &args)
 }
 
 
-class RESTTerm;
+class REPLTerm;
 
-class IRESTHandler
+class IREPLHandler
 {
         public:
-                //typedef bool (IRESTHandler::*HandlerFunc)(const char *, RESTTerm &);
-                //bool echo(const char *, RESTTerm &term);
-                virtual bool handleLine(char *, RESTTerm &) = 0;
+                //typedef bool (IREPLHandler::*HandlerFunc)(const char *, REPLTerm &);
+                //bool echo(const char *, REPLTerm &term);
+                virtual bool handleLine(char *, REPLTerm &) = 0;
 };
 
 class IWriter
@@ -149,7 +149,7 @@ class IWriter
                 virtual ~IWriter(void) {}
 };
 
-class LDBCommandHandler : public IRESTHandler
+class LDBCommandHandler : public IREPLHandler
 {
         public:
                 using DB = leveldb::DB;
@@ -168,23 +168,23 @@ class LDBCommandHandler : public IRESTHandler
 
         public:
                 // command actions
-                bool openDB(const string &args, RESTTerm &term);
-                bool closeDB(const string &args, RESTTerm &term);
-                bool getData(const string &args, RESTTerm &term);
-                bool retrieveData(const string &args, RESTTerm &term);
-                bool putData(const string &args, RESTTerm &term);
-                bool loadData(const string &args, RESTTerm &term);
-                bool destroyDB(const string &args, RESTTerm &term);
-                bool repairDB(const string &args, RESTTerm &term);
+                bool openDB(const string &args, REPLTerm &term);
+                bool closeDB(const string &args, REPLTerm &term);
+                bool getData(const string &args, REPLTerm &term);
+                bool retrieveData(const string &args, REPLTerm &term);
+                bool putData(const string &args, REPLTerm &term);
+                bool loadData(const string &args, REPLTerm &term);
+                bool destroyDB(const string &args, REPLTerm &term);
+                bool repairDB(const string &args, REPLTerm &term);
 
         private:
-                virtual bool handleLine(char *, RESTTerm &);
+                virtual bool handleLine(char *, REPLTerm &);
 
                 const string __getDBValue(const string &key) const;
                 void __retrieveAllData(IWriter &wt, const char kvsep, const char itsep) const;
 
         private:
-                typedef bool (LDBCommandHandler::*CommandAction)(const string &args, RESTTerm &);
+                typedef bool (LDBCommandHandler::*CommandAction)(const string &args, REPLTerm &);
                 using CommandActions = unordered_map<string, LDBCommandHandler::CommandAction>;
                 static CommandActions s_actions;
 
@@ -211,21 +211,21 @@ class LDBCommandHandler : public IRESTHandler
 
 
 
-class RESTTerm : public IRESTHandler
+class REPLTerm : public IREPLHandler
 {
         public:
                 class TermWriter : public IWriter
                 {
                         public:
-                                TermWriter(RESTTerm *term) : m_pTerm(term) {}
+                                TermWriter(REPLTerm *term) : m_pTerm(term) {}
                                 virtual void write(const char *data, const size_t sz);
 
                         private:
-                                RESTTerm *m_pTerm;
+                                REPLTerm *m_pTerm;
                 };
 
         public:
-                RESTTerm(IRESTHandler *hdl,
+                REPLTerm(IREPLHandler *hdl,
                                 const char *prompt = "> ", const char *hist_fn = "ldbrhistory.txt");
 
                 void run(void);
@@ -237,12 +237,12 @@ class RESTTerm : public IRESTHandler
                 IWriter* newWriter(void);
 
         private:
-                virtual bool handleLine(char*, RESTTerm &);
+                virtual bool handleLine(char*, REPLTerm &);
         private:
                 string prompt;
                 const string history_file_name;
 
-                IRESTHandler *hdl;
+                IREPLHandler *hdl;
 
 };
 
@@ -265,7 +265,7 @@ LDBCommandHandler::LDBCommandHandler(DB *&db, const OOptions &oops,
         db = NULL;
 }
 
-bool LDBCommandHandler::handleLine(char *line, RESTTerm &term)
+bool LDBCommandHandler::handleLine(char *line, REPLTerm &term)
 {
         string actname, args;
         char *cmd_split = strchr(line, ' ');
@@ -293,7 +293,7 @@ bool LDBCommandHandler::handleLine(char *line, RESTTerm &term)
         }
 }
 
-bool LDBCommandHandler::openDB(const string &args, RESTTerm &term)
+bool LDBCommandHandler::openDB(const string &args, REPLTerm &term)
 {
         if (db) {
                 term.println("There is opened db");
@@ -342,7 +342,7 @@ bool LDBCommandHandler::openDB(const string &args, RESTTerm &term)
         return true;
 }
 
-bool LDBCommandHandler::closeDB(const string &args, RESTTerm &term)
+bool LDBCommandHandler::closeDB(const string &args, REPLTerm &term)
 {
         term.println("closeDB");
         if (!db) {
@@ -354,7 +354,7 @@ bool LDBCommandHandler::closeDB(const string &args, RESTTerm &term)
         return true;
 }
 
-bool LDBCommandHandler::getData(const string &args, RESTTerm &term)
+bool LDBCommandHandler::getData(const string &args, REPLTerm &term)
 {
         if (!db) {
                 term.println("There is no opened DB to get from");
@@ -389,7 +389,7 @@ bool LDBCommandHandler::getData(const string &args, RESTTerm &term)
         return true;
 }
 
-bool LDBCommandHandler::retrieveData(const string &args, RESTTerm &term)
+bool LDBCommandHandler::retrieveData(const string &args, REPLTerm &term)
 {
         if (!db) {
                 term.println("There is no opened DB to retrieve from");
@@ -456,7 +456,7 @@ void LDBCommandHandler::__retrieveAllData(IWriter &wt, const char kvsep, const c
         }
 }
 
-bool LDBCommandHandler::putData(const string &args, RESTTerm &term)
+bool LDBCommandHandler::putData(const string &args, REPLTerm &term)
 {
         if (!db) {
                 term.println("There is no opened DB to write to");
@@ -484,7 +484,7 @@ bool LDBCommandHandler::putData(const string &args, RESTTerm &term)
         return true;
 }
 
-bool LDBCommandHandler::loadData(const string &args, RESTTerm &term)
+bool LDBCommandHandler::loadData(const string &args, REPLTerm &term)
 {
         if (!db) {
                 term.println("There is no opened DB to write to");
@@ -527,7 +527,7 @@ bool LDBCommandHandler::loadData(const string &args, RESTTerm &term)
         return true;
 }
 
-bool LDBCommandHandler::destroyDB(const string &args, RESTTerm &term)
+bool LDBCommandHandler::destroyDB(const string &args, REPLTerm &term)
 {
         if (db) {
                 term.println("There is opened DB, close it first!");
@@ -556,7 +556,7 @@ bool LDBCommandHandler::destroyDB(const string &args, RESTTerm &term)
         }
 }
 
-bool LDBCommandHandler::repairDB(const string &args, RESTTerm &term)
+bool LDBCommandHandler::repairDB(const string &args, REPLTerm &term)
 {
         if (db) {
                 term.println("There is opened DB, close it first!");
@@ -586,14 +586,14 @@ bool LDBCommandHandler::repairDB(const string &args, RESTTerm &term)
         return true;
 }
 
-void RESTTerm::TermWriter::write(const char *data, const size_t sz)
+void REPLTerm::TermWriter::write(const char *data, const size_t sz)
 {
         // add lock if neccessary
         m_pTerm->write(data, sz);
         m_pTerm->flush();
 }
 
-RESTTerm::RESTTerm(IRESTHandler *hdl, const char *prompt, const char *hist_fn)
+REPLTerm::REPLTerm(IREPLHandler *hdl, const char *prompt, const char *hist_fn)
         :prompt(prompt),
         history_file_name(hist_fn),
         hdl(hdl)
@@ -602,7 +602,7 @@ RESTTerm::RESTTerm(IRESTHandler *hdl, const char *prompt, const char *hist_fn)
                 linenoiseHistoryLoad(history_file_name.c_str());
 }
 
-void RESTTerm::print(const char *format, ...)
+void REPLTerm::print(const char *format, ...)
 {
         va_list vl;
         va_start(vl, format);
@@ -610,7 +610,7 @@ void RESTTerm::print(const char *format, ...)
         va_end(vl);
 }
 
-void RESTTerm::println(const char *format, ...)
+void REPLTerm::println(const char *format, ...)
 {
         va_list vl;
         va_start(vl, format);
@@ -621,7 +621,7 @@ void RESTTerm::println(const char *format, ...)
         flush();
 }
 
-void RESTTerm::printlnResult(const char *format, ...)
+void REPLTerm::printlnResult(const char *format, ...)
 {
         printf("=> ");
         va_list vl;
@@ -633,29 +633,29 @@ void RESTTerm::printlnResult(const char *format, ...)
         flush();
 }
 
-IWriter* RESTTerm::newWriter(void)
+IWriter* REPLTerm::newWriter(void)
 {
         return new TermWriter(this);
 }
 
 
-void RESTTerm::write(const char *data, const size_t sz)
+void REPLTerm::write(const char *data, const size_t sz)
 {
         fwrite(data, sizeof(*data), sz, stdout);
 }
 
-void RESTTerm::flush(void)
+void REPLTerm::flush(void)
 {
         fflush(stdout);
 }
 
-bool RESTTerm::handleLine(char *line, RESTTerm &term)
+bool REPLTerm::handleLine(char *line, REPLTerm &term)
 {
         term.println("Echo: %s", line);
         return true;
 }
 
-void RESTTerm::run(void)
+void REPLTerm::run(void)
 {
         char *line;
 
@@ -680,7 +680,7 @@ int main(int argc, char **argv)
         leveldb::ReadOptions rops;
         leveldb::WriteOptions wops;
         LDBCommandHandler ldbh(db, oops, rops, wops);
-        RESTTerm term(&ldbh, "> ");
+        REPLTerm term(&ldbh, "> ");
         term.run();
 
         return 0;
